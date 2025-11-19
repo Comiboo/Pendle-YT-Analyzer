@@ -1,10 +1,11 @@
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { MOCK_MARKETS } from './services/mockData';
+import { fetchPendleMarkets } from './services/pendleApi';
 import { MarketCard } from './components/MarketCard';
 import { calculateInvestmentScore } from './services/scoringLogic';
 import { translations } from './services/translations';
-import { Language } from './types';
+import { Language, MarketData } from './types';
 
 type SortOption = 'scoreDesc' | 'scoreAsc';
 type FilterOption = 'All' | 'Strong Buy' | 'Buy' | 'Hold' | 'Avoid';
@@ -13,12 +14,32 @@ function App() {
   const [sortOrder, setSortOrder] = useState<SortOption>('scoreDesc');
   const [filterTier, setFilterTier] = useState<FilterOption>('All');
   const [language, setLanguage] = useState<Language>('en');
+  const [markets, setMarkets] = useState<MarketData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [usingRealData, setUsingRealData] = useState(false);
 
   const t = translations[language];
 
+  // Fetch Data on Mount
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      const data = await fetchPendleMarkets();
+      
+      // Check if we got real data by checking ID format (Mock IDs are '1', '2'...)
+      // Real Pendle addresses are long strings (0x...)
+      const isReal = data.length > 0 && data[0].id.length > 10; 
+      
+      setUsingRealData(isReal);
+      setMarkets(data);
+      setLoading(false);
+    };
+    loadData();
+  }, []);
+
   // Process markets: Add score and leverage filtering/sorting
   const processedMarkets = useMemo(() => {
-    const scored = MOCK_MARKETS.map(market => ({
+    const scored = markets.map(market => ({
       ...market,
       scoring: calculateInvestmentScore(market, language)
     }));
@@ -39,7 +60,7 @@ function App() {
     });
 
     return sorted;
-  }, [sortOrder, filterTier, language]);
+  }, [markets, sortOrder, filterTier, language]);
 
   const toggleLanguage = () => {
     setLanguage(prev => prev === 'en' ? 'ko' : 'en');
@@ -60,6 +81,13 @@ function App() {
             </h1>
           </div>
           <div className="flex items-center gap-4">
+            {/* Status Indicator */}
+            <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800/50 border border-slate-700">
+                <span className={`w-2 h-2 rounded-full ${usingRealData ? 'bg-emerald-400 shadow-[0_0_8px_#34d399]' : 'bg-yellow-400'}`}></span>
+                <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wide">
+                    {usingRealData ? 'Live Data (Pendle V2)' : 'Simulated Data'}
+                </span>
+            </div>
             <button 
               onClick={toggleLanguage}
               className="px-3 py-1 rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-600 text-xs font-bold text-slate-200 transition-colors"
@@ -168,23 +196,34 @@ function App() {
             </div>
         </div>
         
-        {/* Market Grid */}
-        {processedMarkets.length > 0 ? (
+        {/* Loading State */}
+        {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {processedMarkets.map((item) => (
-                <MarketCard key={item.id} market={item} scoring={item.scoring} language={language} />
-                ))}
+               {[1,2,3,4,5,6].map(i => (
+                  <div key={i} className="h-80 rounded-xl bg-slate-800/50 animate-pulse border border-slate-700"></div>
+               ))}
             </div>
         ) : (
-            <div className="text-center py-20 bg-slate-900/30 rounded-xl border border-slate-800 border-dashed">
-                <p className="text-slate-500">{t.noMarkets}</p>
-                <button 
-                    onClick={() => setFilterTier('All')}
-                    className="mt-4 text-indigo-400 hover:text-indigo-300 text-sm font-medium"
-                >
-                    {t.clearFilters}
-                </button>
-            </div>
+            /* Market Grid */
+            <>
+                {processedMarkets.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {processedMarkets.map((item) => (
+                        <MarketCard key={item.id} market={item} scoring={item.scoring} language={language} />
+                        ))}
+                    </div>
+                ) : (
+                    <div className="text-center py-20 bg-slate-900/30 rounded-xl border border-slate-800 border-dashed">
+                        <p className="text-slate-500">{t.noMarkets}</p>
+                        <button 
+                            onClick={() => setFilterTier('All')}
+                            className="mt-4 text-indigo-400 hover:text-indigo-300 text-sm font-medium"
+                        >
+                            {t.clearFilters}
+                        </button>
+                    </div>
+                )}
+            </>
         )}
 
         <div className="mt-12 text-center border-t border-slate-800 pt-8">
