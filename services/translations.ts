@@ -3,7 +3,7 @@ import { Language } from '../types';
 
 export const translations = {
   en: {
-    appTitle: "Pendle YT Analyzer",
+    appTitle: "pendle yt analyzer comiboo",
     officialApp: "Official App",
     scoreCriteriaTitle: "Investment Score Criteria",
     scoreCriteriaDesc: "Scores are calculated based on the profitability of buying YT tokens at the current moment:",
