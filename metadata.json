@@ -1,0 +1,5 @@
+{
+  "name": "Pendle YT Analyzer",
+  "description": "An intelligent dashboard that analyzes Pendle Finance Yield Token (YT) markets, calculating investment scores based on APY spreads, maturity timelines, and historical trends.",
+  "requestFramePermissions": []
+}
